@@ -1,23 +1,30 @@
 import math
 
 class Value:
-    """ stores a single scalar value and its gradient 
-        For any node `out`, its `_backward()` function computes the 
-        dl/d(each parent) using local derivative * out.grad.
+    """A node in a scalar-valued computation graph with automatic differentiation.
+
+    Value wraps a scalar value and stores its gradient and a `_backward` function, which
+    allows us to build a computation graph across various operations.
+
+    Each Value contains a `_backward` closure that defines how gradients flow through
+    each operation.
+
+    Calling `backward()` on the output node creates a topological ordering of the Directed
+    Acyclic Graph, on which `_backward()` is called recursively to accumulate the gradient
+    of all ancestor nodes.
     """
 
 
     def __init__(self, data, _prev=(), _op='', label=''):
         self.data = data
         self.grad = 0
-        # Internal use variables
         self._backward = lambda: None
         self._prev = set(_prev)
         self._op = _op
         self.label = label
 
 
-    def __add__(self, other): # self + other
+    def __add__(self, other):
         other = other if isinstance(other, Value) else Value(other)
         out = Value(self.data + other.data, (self, other), '+')
         
@@ -31,7 +38,7 @@ class Value:
         return out
 
 
-    def __mul__(self, other): # self * other
+    def __mul__(self, other):
         other = other if isinstance(other, Value) else Value(other)
         out = Value(self.data * other.data, (self, other), '*')
 
@@ -43,7 +50,7 @@ class Value:
         return out
 
 
-    def __pow__(self, other): # self ** other
+    def __pow__(self, other):
         assert isinstance(other, (int, float)), "only supporting int/float powers for now"
         out = Value(self.data**other, (self,), f'**{other}')
 
@@ -55,31 +62,31 @@ class Value:
     
 
 
-    def __neg__(self): # -self
+    def __neg__(self):
         return self * -1
 
 
-    def __radd__(self, other): # other + self
+    def __radd__(self, other):
         return self + other
 
 
-    def __sub__(self, other): # self - other
+    def __sub__(self, other):
         return self + (-other)
 
 
-    def __rsub__(self, other): # other - self
+    def __rsub__(self, other):
         return other + (-self)
 
 
-    def __rmul__(self, other): # other * self
+    def __rmul__(self, other):
         return self * other
 
 
-    def __truediv__(self, other): # self / other
+    def __truediv__(self, other):
         return self * other**-1
 
 
-    def __rtruediv__(self, other): # other / self
+    def __rtruediv__(self, other):
         return other * self**-1
 
 
@@ -127,7 +134,7 @@ class Value:
 
 
     def backward(self):
-        # Created a forward dependency order
+        # Build topological order so we can traverse in reverse during backprop
         topo = []
         visited = set()
         def build_topo(v: Value):

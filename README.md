@@ -2,7 +2,9 @@
 
 This project is a deep dive into the mechanics of automatic differentiation. Inspired by Andrej Karpathy’s `micrograd`, this repository builds a backpropagation engine from the ground up.
 
-We begin with a **scalar-based autograd engine**, where gradients are tracked on individual numbers to build intuition from first principles. Once the core ideas are clear, we scale the design to **multi-dimensional arrays (tensors)**, mimicking how modern frameworks like PyTorch operate internally.
+We begin with a **scalar-based autograd engine**, where gradients are tracked on individual numbers to build intuition from first principles.
+
+Once the core ideas are clear, we scale the design to **n-dimensional arrays (tensors)**, mimicking how autograd engines like PyTorch's operate internally.
 
 ## Project Structure
 
@@ -28,58 +30,57 @@ README.md
 
 ## What is Autograd?
 
-Autograd (automatic differentiation) is a system that computes gradients of complex functions efficiently and exactly.
+An **autograd** (_automatic gradient_) engine implements reverse-mode automatic differentiation — the algorithm underlying backpropagation — which efficiently evaluates the gradients of a loss function with respect to its parameters.
 
-Neural networks are large composite functions:
+Neural networks are effectively a large composite functions:
 
 $$
 L = f(g(h(x)))
 $$
 
-During training, we need the gradient of the loss with respect to **every parameter**:
+During training, we need the gradient of the loss with respect to its **every parameter**:
 
 $$
 \frac{\partial L}{\partial \theta}
 $$
 
-Instead of symbolically differentiating the entire expression or manually applying calculus for each model, autograd works by:
+Instead of analytically differentiating the entire expression, autograd works by:
 
 1. **Recording operations** during the forward pass.
 2. **Building a computational graph** that captures how each value depends on others.
-3. **Storing local derivatives** for each operation.
-4. **Propagating gradients backward** using the chain rule (reverse-mode autodiff).
+3. **Storing gradients** for each parameters.
+4. **Propagating gradients backward** using the chain rule:
+   each node's gradient = its local derivative × the gradient flowing in from downstream.
 
-This backward propagation of gradients through the computational graph is known as **backpropagation**.
+This backward propagation of gradients from the output to the inputs is known as **backpropagation**.
 
-Autograd enables gradient-based optimization such as:
+It enables gradient-based optimization, such as:
 
 $$
 \theta = \theta - \alpha \frac{\partial L}{\partial \theta}
 $$
 
-The scalar engine demonstrates this process on individual values.  
-The tensor engine extends the same principles to multi-dimensional arrays with broadcasting-aware gradient flow, similar to modern deep learning frameworks.
+**The scalar engine** implements the nodes on a Value (Scalar) level.
+**The tensor engine** further extends it to n-dimensional arrays (Tensor) for efficiency.
 
 ---
 
 ## Demonstration
 
-The engines are validated through small training experiments:
+The purpose of the demonstration is to show that the optimizations can be performed using the custom autograd engine through experiments:
 
 - **Scalar Engine** — Trained a simple MLP on the `make_moons` dataset.
 - **Tensor Engine** — Trained an MLP on a subset of the `MNIST` dataset.
-
-These notebooks demonstrate forward passes, gradient propagation, and parameter updates using the custom autograd implementations.
 
 ### Scalar Engine
 
 - MLP Architecture: 2 → 32 → 16 → 2
 - Activation: `ReLU`
-- Optimizer: Vanilla Gradient Descent
+- Optimizer: Stochastic Gradient Descent
 - Learning Rate: 0.01
 - Loss: Binary classification loss
 - Dataset: `make_moons()`
-- Final Training Accuracy:`~96%`
+- Final Training Accuracy:`~99.22%`
 
 #### Training Loss Curve
 
@@ -95,13 +96,13 @@ These notebooks demonstrate forward passes, gradient propagation, and parameter 
 
 ### Tensor Engine — MNIST (Subset)
 
-- MLP Architecture: 784 → 256 → 256 → 10
+- MLP Architecture: 784 → 128 → 10
 - Activation: ReLU
-- Optimizer: Gradient Descent
-- Learning Rate: 0.001
+- Optimizer: Stochastic Gradient Descent
+- Learning Rate: 0.1
 - Loss: Cross-Entropy
 - Dataset: Subset of MNIST
-- Final Training Accuracy: `92%`
+- Final Test Accuracy: `97.87%`
 
 #### Training Loss Curve
 
@@ -116,8 +117,9 @@ These notebooks demonstrate forward passes, gradient propagation, and parameter 
 </p>
 
 ## Installation
+
 ```bash
 git clone https://github.com/Dhiranjit/autograd-from-first-principles.git
 cd autograd-from-first-principles
-pip install -e```
-
+pip install -e .
+```

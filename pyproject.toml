@@ -1,9 +1,11 @@
 [project]
 name = "autograd"
-version = "0.1.0"
-description = ""
-authors = [{name="Dhiranjit Daimary"}]
-dependencies = ["numpy"]
+version = "1.0.0"
+description = "A minimal autograd engine supporting both scaler and tensor operation with neural network primitives."
+dependencies = [
+    "numpy",
+    "graphviz=0.21"
+    ]
 
 [build-system]
 requires = ["setuptools"]
@@ -11,3 +13,4 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
+namespaces = true

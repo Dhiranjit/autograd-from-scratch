@@ -1,125 +1,95 @@
-from autograd.tensor.engine import Tensor
 import numpy as np
+from autograd.tensor.engine import Tensor
 
 
 class Module:
+    def zero_grad(self):
+        for p in self.parameters():
+            p.grad = np.zeros_like(p.grad)
+        
     def parameters(self):
         return []
 
-    def zero_grad(self):
-        for p in self.parameters():
-            p.zero_grad()
-
 
 class Linear(Module):
-    def __init__(self, in_features, out_features, bias=True):
-        self.W = Tensor(np.random.randn(in_features, out_features) * 0.1)
-        self.b = Tensor(np.zeros((1, out_features))) if bias else None
-        self.in_features = in_features
-        self.out_features = out_features
-
-    def __call__(self, x):
-        out = x @ self.W
-        if self.b is not None:
-            out = out + self.b
+    def __init__(self, nin: int, nout: int):
+        self.nin = nin
+        self.nout = nout
+        self.W = Tensor.randn(nout, nin) * (2 / nin) ** 0.5 # He init
+        self.b = Tensor.zeros(nout,)
+    
+    def __call__(self, X: Tensor):
+        out = X @ self.W.T + self.b 
         return out
-
+    
     def parameters(self):
-        return [self.W] + ([self.b] if self.b is not None else [])
-
+        return [self.W, self.b]
+    
     def __repr__(self):
-        return f"Linear(in={self.in_features}, out={self.out_features})"
+        return f"Linear: ({self.nin}, {self.nout})"
 
 
 class ReLU(Module):
-    def __call__(self, x):
-        return x.relu()
-
+    def __call__(self, X: Tensor):
+        return X.relu()
+    
     def __repr__(self):
-        return "ReLU()"
+        return f"ReLU()"
 
 
-class Tanh(Module):
-    def __call__(self, x):
-        return x.tanh()
-
+class Sigmoid(Module):
+    def __call__(self, X: Tensor):
+        return X.sigmoid()
+    
     def __repr__(self):
-        return "Tanh()"
-
+        return f"Sigmoid()"
+    
 
 class Sequential(Module):
     def __init__(self, *layers):
         self.layers = layers
-
-    def __call__(self, x):
+    
+    def __call__(self, X):
         for layer in self.layers:
-            x = layer(x)
-        return x
+            X = layer(X)
+        return X
 
     def parameters(self):
         return [p for layer in self.layers for p in layer.parameters()]
 
     def __repr__(self):
-        lines = ["Sequential("]
-        for i, layer in enumerate(self.layers):
-            lines.append(f"  ({i}): {layer}")
-        lines.append(")")
-        return "\n".join(lines)
+        layers = ",\n    ".join(str(l) for l in self.layers)
 
-
-class MLP(Module):
-    def __init__(self, in_features, layer_sizes, activation=ReLU):
-        layers = []
-        sizes = [in_features] + layer_sizes
-
-        for i in range(len(layer_sizes)):
-            layers.append(Linear(sizes[i], sizes[i+1]))
-            if i != len(layer_sizes) - 1:
-                layers.append(activation())
-
-        self.model = Sequential(*layers)
-
-    def __call__(self, x):
-        return self.model(x)
-
-    def parameters(self):
-        return self.model.parameters()
-
-    def __repr__(self):
-        return repr(self.model)
-    
-
-class CrossEntropyLoss(Module):
-    def __call__(self, logits, targets):
-        """
-        logits: Tensor of shape (batch_size, num_classes)
-        targets: numpy array or list of class indices (batch_size,)
-        """
-
-        batch_size, num_classes = logits.data.shape
-
-        # ---- Stable softmax ----
-        max_logits = Tensor(
-            logits.data.max(axis=1, keepdims=True),
-            requires_grad=False
+        return (
+            f"Sequential(\n"
+            f"    {layers}\n"
+            f")\n"
         )
 
-        shifted = logits - max_logits
-        exp = shifted.exp()
-        sum_exp = exp.sum(axis=1, keepdims=True)
-        probs = exp / sum_exp
+class CrossEntropyLossWithLogits:
+    def __call__(self, logits: Tensor, targets: np.ndarray) -> Tensor:
+        """
+        logits: Tensor of shape (N, C)
+        targets: np.ndarray of shape (N,) with integer class indices
+        return: scaler Tensor (mean loss over batch)
+        """
+        x = logits.data
+        N, C = x.shape
 
-        # ---- Pick correct class probabilities ----
-        # Create one-hot manually (no gradient needed)
-        one_hot = np.zeros_like(logits.data)
-        one_hot[np.arange(batch_size), targets] = 1.0
-        one_hot = Tensor(one_hot, requires_grad=False)
+        # log-sum-exp trick for stability
+        m = x.max(axis=1, keepdims=True) # (N, 1)
+        x_shifted = x - m
+        log_sum_exp = m.squeeze(1) + np.log(np.exp(x_shifted).sum(axis=1)) # (N,)
+        nll = -x[np.arange(N), targets] + log_sum_exp
+        loss = nll.mean()
+        out = Tensor(loss, (logits,))
+        
+        def _backward():
+            probs = np.exp(x_shifted) / np.exp(x_shifted).sum(axis=1, keepdims=True) # (N, C)
+            probs[np.arange(N), targets] -= 1.0
+            probs /= N
+            logits.grad += probs * out.grad
+        out._backward = _backward
 
-        # ---- Cross entropy ----
-        log_probs = probs.log()
-        loss = -(one_hot * log_probs).sum(axis=1).mean()
+        return out 
 
-        return loss
-
-    def __repr__(self):
-        return "CrossEntropyLoss()"
