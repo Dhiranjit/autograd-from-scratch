@@ -77,7 +77,7 @@ The purpose of the demonstration is to show that the optimizations can be perfor
 - MLP Architecture: 2 → 32 → 16 → 2
 - Activation: `ReLU`
 - Optimizer: Stochastic Gradient Descent
-- Learning Rate: 0.01
+- Learning Rate: 1
 - Loss: Binary classification loss
 - Dataset: `make_moons()`
 - Final Training Accuracy:`~99.22%`
