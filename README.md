@@ -1,4 +1,4 @@
-# Autograd from First Principles
+# Autograd from scratch
 
 This project is a deep dive into the mechanics of automatic differentiation. Inspired by Andrej Karpathy’s `micrograd`, this repository builds a backpropagation engine from the ground up.
 
