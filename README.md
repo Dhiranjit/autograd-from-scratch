@@ -9,22 +9,24 @@ Once the core ideas are clear, we scale the design to **n-dimensional arrays (te
 ## Project Structure
 
 ```
-autograd/
-│
-├── scalar/                # Scalar-based reverse-mode autodiff
-│   ├── engine.py          # Value class and backward propagation logic
-│   ├── nn.py              # Neuron / MLP built using scalar engine
-│   └── graphic.py         # Computational graph visualization
-│
-├── tensor/                # Tensor-based autograd engine
-│   ├── engine.py          # Tensor class and gradient propagation
-│   └── nn.py              # Neural network modules (tensor version)
-│
+src/
+└── autograd_from_scratch/
+    ├── __init__.py
+    ├── scalar/            # Scalar-based reverse-mode autodiff
+    │   ├── engine.py      # Value class and backward propagation logic
+    │   ├── nn.py          # Neuron / MLP built using scalar engine
+    │   └── graphic.py     # Computational graph visualization
+    │
+    └── tensor/            # Tensor-based autograd engine
+        ├── engine.py      # Tensor class and gradient propagation
+        └── nn.py          # Neural network modules (tensor version)
+
 notebooks/
-│   ├── autograd_scalar_demo.ipynb
-│   └── autograd_tensor_demo.ipynb
-│
+├── autograd_scaler_demo.ipynb
+└── autograd_tensor_demo.ipynb
+
 pyproject.toml             # Package configuration
+uv.lock
 README.md
 ```
 
