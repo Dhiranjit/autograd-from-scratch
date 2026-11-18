@@ -1,5 +1,5 @@
 import random
-from autograd.scalar.engine import Value
+from  autograd_from_scratch.scalar.engine import Value
 
 
 def cross_entropy_loss(logits, y_true):

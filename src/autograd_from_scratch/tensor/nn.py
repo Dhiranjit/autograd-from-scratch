@@ -1,5 +1,5 @@
 import numpy as np
-from autograd.tensor.engine import Tensor
+from autograd_from_scratch.tensor.engine import Tensor
 
 
 class Module:
